@@ -111,7 +111,9 @@ void setup() {
   Serial.println("Hello, enter your name!");
 
   Timer1.attachInterrupt(isr_call);
+  Timer1.stop();
 
+  stopToIdle();
 
 }
 
@@ -128,6 +130,22 @@ void start()
 
   }
   Timer1.initialize(1000);
+}
+
+void stopToIdle()
+{
+  int i;
+    for (i = 0; i < NUM_LANES; i++)
+  {
+    lanes[i].cnt1 = 0;
+    lanes[i].cnt2 = 0;
+
+    setColor(&(lanes[i]), 0, 0, 255);
+    lanes[i].time2start = timeSettings[i];
+
+  }
+  Timer1.stop();
+  
 }
 
 void isr_call()
@@ -149,7 +167,7 @@ void task_1ms ()
     }
     else
     {
-      setColor(&lanes[j], 0, 255, 255);
+      setColor(&lanes[j], 0, 255, 0);
     }
   }
 
@@ -176,6 +194,11 @@ void loop() {
         Serial.println("Started...");
         start();
       }
+      else if (command.equals("stop"))
+      {
+        Serial.println("...Stopped");
+        stopToIdle();
+      }
       else if (command.length() > 4 && command.charAt(0) == 'L' && command.charAt(2) == ':')
       {
         if (command.charAt(1) >= '0' && command.charAt(1) <= '8')
@@ -201,3 +224,4 @@ void loop() {
     }
   }
 }
+
