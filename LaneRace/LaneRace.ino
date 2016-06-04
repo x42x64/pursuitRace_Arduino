@@ -7,12 +7,20 @@
 
 #define NUM_LANES 6
 
+// Intervall des Blinkens
+#define BLINK_INTERVALL_MS 400
+// An-Zeit beim Blinken
+#define BLINK_ON_TIME_MS 250
+// Zeit vor Gruen bei dem das Blinken startet
+#define BLINK_START_TIME_MS 5000
+
 
 String command; // String input from command prompt
 String temp1, temp2; // temporary strings
 char inByte; // Byte input from command prompt
 char carray[6]; // character array for string to int // manipulation
 int a, b, c; // temporary numbers
+unsigned int blinkCounter;
 
 typedef struct {
   int pins[CHANNELS_PER_LANE];
@@ -52,7 +60,7 @@ void setup() {
   int i, j;
 
   // put your setup code here, to run once:
-  lanes[0].pins[RED] =53;
+  lanes[0].pins[RED] = 53;
   lanes[0].pins[GREEN] = 51;
   lanes[0].pins[BLUE] = 47;
 
@@ -76,13 +84,13 @@ void setup() {
   lanes[5].pins[GREEN] = 50;
   lanes[5].pins[BLUE] = 52;
 
-//  lanes[6].pins[RED] = 28;
-//  lanes[6].pins[GREEN] = 28;
-//  lanes[6].pins[BLUE] = 28;
-//
-//  lanes[7].pins[RED] = 28;
-//  lanes[7].pins[GREEN] = 28;
-//  lanes[7].pins[BLUE] = 28;
+  //  lanes[6].pins[RED] = 28;
+  //  lanes[6].pins[GREEN] = 28;
+  //  lanes[6].pins[BLUE] = 28;
+  //
+  //  lanes[7].pins[RED] = 28;
+  //  lanes[7].pins[GREEN] = 28;
+  //  lanes[7].pins[BLUE] = 28;
 
 
 
@@ -110,6 +118,7 @@ void setup() {
   Serial.begin(9600);
   Serial.println("Hello, enter your name!");
 
+
   Timer1.attachInterrupt(isr_call);
   Timer1.stop();
 
@@ -119,7 +128,10 @@ void setup() {
 
 void start()
 {
+
   int i;
+  blinkCounter = 0;
+
   for (i = 0; i < NUM_LANES; i++)
   {
     lanes[i].cnt1 = 0;
@@ -135,7 +147,7 @@ void start()
 void stopToIdle()
 {
   int i;
-    for (i = 0; i < NUM_LANES; i++)
+  for (i = 0; i < NUM_LANES; i++)
   {
     lanes[i].cnt1 = 0;
     lanes[i].cnt2 = 0;
@@ -145,7 +157,7 @@ void stopToIdle()
 
   }
   Timer1.stop();
-  
+
 }
 
 void isr_call()
@@ -157,16 +169,44 @@ void isr_call()
 void task_1ms ()
 {
   int j;
+  int blinkMask = 0xff;
 
+  // blink counter handling
+  blinkCounter++;
+  if (blinkCounter > BLINK_INTERVALL_MS)
+  {
+    blinkCounter = 0;
+  }
+
+  if (blinkCounter > BLINK_ON_TIME_MS)
+  {
+    blinkMask = 0x00;
+  }
+  else
+  {
+    blinkMask = 0xff;
+  }
+
+
+  //
   for (j = 0; j < NUM_LANES; j++)
   {
     if (lanes[j].time2start > 0)
     {
+      // red case
       lanes[j].time2start--;
-      setColor(&lanes[j], 255, 0, 0);
+      if (lanes[j].time2start < BLINK_START_TIME_MS)
+      {
+        setColor(&lanes[j], 255&blinkMask, 0, 0);
+      }
+      else
+      {
+        setColor(&lanes[j], 255, 0, 0);
+      }
     }
     else
     {
+      // green case
       setColor(&lanes[j], 0, 255, 0);
     }
   }
